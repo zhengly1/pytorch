@@ -1248,8 +1248,6 @@ class build_ext(setuptools.command.build_ext.build_ext):
     def build_extensions(self) -> None:
         self.create_compile_commands()
 
-        build_lib = Path(self.build_lib).resolve()
-
         super().build_extensions()
 
     def get_outputs(self) -> list[str]:
