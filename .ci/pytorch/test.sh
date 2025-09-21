@@ -1640,6 +1640,60 @@ test_operator_microbenchmark() {
   done
 }
 
+test_operator_microbenchmark_pytorch28() {
+  TEST_REPORTS_DIR=$(pwd)/test/test-reports
+  mkdir -p "$TEST_REPORTS_DIR"
+  TEST_DIR=$(pwd)
+
+  cd benchmarks/operator_benchmark/pt_extension
+  python -m pip install .
+
+  # ### Perf benchmark 2.8 baseline (following dynamo benchmark pattern)
+  pip_uninstall torch torchvision torchaudio torchrec fbgemm-gpu
+  pip_install torch==2.8.0 torchvision torchaudio torchrec fbgemm-gpu
+  pip freeze
+  
+  # Verify installation
+  python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"
+
+  cd "${TEST_DIR}"/benchmarks/operator_benchmark
+  
+  # Set environment variables to prevent segmentation faults
+  export CUDA_LAUNCH_BLOCKING=1
+  export TORCH_CUDNN_V8_API_ENABLED=0
+  export TORCH_CUDNN_SDPA_ENABLED=0
+  
+  # Set memory management options
+  export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+  
+  for OP_BENCHMARK_TESTS in matmul mm; do
+    echo "Running ${OP_BENCHMARK_TESTS} benchmark with compile..."
+    # Run with timeout and error handling to catch segfaults
+    timeout 1800 $TASKSET python -m pt.${OP_BENCHMARK_TESTS}_test --tag-filter long \
+      --output-json-for-dashboard "${TEST_REPORTS_DIR}/operator_microbenchmark_pytorch28_${OP_BENCHMARK_TESTS}_compile.json" \
+      --benchmark-name "PyTorch 2.8 operator microbenchmark" --use-compile || {
+      echo "Segmentation fault detected in ${OP_BENCHMARK_TESTS} compile test, trying with reduced memory..."
+      # Try with reduced memory and simpler configuration
+      export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:64
+      timeout 1800 $TASKSET python -m pt.${OP_BENCHMARK_TESTS}_test --tag-filter short \
+        --output-json-for-dashboard "${TEST_REPORTS_DIR}/operator_microbenchmark_pytorch28_${OP_BENCHMARK_TESTS}_compile_fallback.json" \
+        --benchmark-name "PyTorch 2.8 operator microbenchmark (fallback)" --use-compile
+    }
+    
+    echo "Running ${OP_BENCHMARK_TESTS} benchmark without compile..."
+    timeout 1800 $TASKSET python -m pt.${OP_BENCHMARK_TESTS}_test --tag-filter long \
+      --output-json-for-dashboard "${TEST_REPORTS_DIR}/operator_microbenchmark_pytorch28_${OP_BENCHMARK_TESTS}.json" \
+      --benchmark-name "PyTorch 2.8 operator microbenchmark" || {
+      echo "Segmentation fault detected in ${OP_BENCHMARK_TESTS} eager test, trying with reduced memory..."
+      # Try with reduced memory and simpler configuration
+      export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:64
+      timeout 1800 $TASKSET python -m pt.${OP_BENCHMARK_TESTS}_test --tag-filter short \
+        --output-json-for-dashboard "${TEST_REPORTS_DIR}/operator_microbenchmark_pytorch28_${OP_BENCHMARK_TESTS}_fallback.json" \
+        --benchmark-name "PyTorch 2.8 operator microbenchmark (fallback)"
+    }
+  done
+}
+
 if ! [[ "${BUILD_ENVIRONMENT}" == *libtorch* || "${BUILD_ENVIRONMENT}" == *-bazel-* ]]; then
   (cd test && python -c "import torch; print(torch.__config__.show())")
   (cd test && python -c "import torch; print(torch.__config__.parallel_info())")
@@ -1695,6 +1749,8 @@ elif [[ "${TEST_CONFIG}" == *operator_benchmark* ]]; then
   fi
 elif [[ "${TEST_CONFIG}" == *operator_microbenchmark* ]]; then
   test_operator_microbenchmark
+elif [[ "${TEST_CONFIG}" == *operator_microbenchmark_pytorch28* ]]; then
+  test_operator_microbenchmark_pytorch28
 elif [[ "${TEST_CONFIG}" == *inductor_distributed* ]]; then
   test_inductor_distributed
 elif [[ "${TEST_CONFIG}" == *inductor-halide* ]]; then
