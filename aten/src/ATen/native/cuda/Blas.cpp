@@ -15,6 +15,7 @@
 #include <ATen/native/Resize.h>
 #include <c10/util/MaybeOwned.h>
 #include <ATen/native/cuda/RowwiseScaledMM.h>
+#include <ATen/native/cuda/UlpGemm.h>
 
 #ifndef AT_PER_OPERATOR_HEADERS
 #include <ATen/Functions.h>
@@ -454,41 +455,78 @@ Tensor& addmm_out_cuda_impl(Tensor& result, const Tensor& self, const Tensor& ma
 #endif
   } else
   {
-    AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(
-        at::ScalarType::Half,
-        at::ScalarType::BFloat16,
-        scalar_type,
-        "addmm_cuda",
-        [&] {
-          using opmath_t = at::opmath_type<scalar_t>;
-          opmath_t alpha_val = alpha.to<opmath_t>();
-          opmath_t beta_val = beta.to<opmath_t>();
-          const scalar_t* mat1_ptr = args.mata->const_data_ptr<scalar_t>();
-          const scalar_t* mat2_ptr = args.matb->const_data_ptr<scalar_t>();
-          scalar_t* result_ptr = args.result->mutable_data_ptr<scalar_t>();
-          at::cuda::blas::gemm<scalar_t>(
-              args.transa,
-              args.transb,
-              args.m,
-              args.n,
-              args.k,
-              alpha_val,
-              mat1_ptr,
-              args.lda,
-              mat2_ptr,
-              args.ldb,
-              beta_val,
-              result_ptr,
-              args.result_ld);
-        });
-    switch (activation) {
-      case Activation::RELU:
-        at::relu_(const_cast<Tensor&>(*args.result));
-        break;
-      case Activation::GELU:
-        at::gelu_(const_cast<Tensor&>(*args.result), "tanh");
-        break;
-      default: break;
+    // Check if we should use ULP GEMM
+    if (at::native::ulp_gemm::is_ulp_gemm_available(mat1, mat2) && 
+        activation == Activation::None) {
+      // Use ULP GEMM for supported cases without activation
+      AT_DISPATCH_FLOATING_TYPES_AND2(
+          at::ScalarType::Half,
+          at::ScalarType::BFloat16,
+          scalar_type,
+          "addmm_cuda_ulp",
+          [&] {
+            using opmath_t = at::opmath_type<scalar_t>;
+            opmath_t alpha_val = alpha.to<opmath_t>();
+            opmath_t beta_val = beta.to<opmath_t>();
+            
+            bool transpose_mat1 = (args.transa != 'n' && args.transa != 'N');
+            bool transpose_mat2 = (args.transb != 'n' && args.transb != 'N');
+            
+            at::native::ulp_gemm::ulp_gemm_impl<scalar_t>(
+                transpose_mat1,
+                transpose_mat2,
+                args.m,
+                args.n,
+                args.k,
+                alpha_val,
+                args.mata->const_data_ptr<scalar_t>(),
+                args.lda,
+                args.matb->const_data_ptr<scalar_t>(),
+                args.ldb,
+                beta_val,
+                args.result->mutable_data_ptr<scalar_t>(),
+                args.result_ld);
+          });
+    } else {
+      // Fall back to standard cuBLAS implementation
+      AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(
+          at::ScalarType::Half,
+          at::ScalarType::BFloat16,
+          scalar_type,
+          "addmm_cuda",
+          [&] {
+            using opmath_t = at::opmath_type<scalar_t>;
+            opmath_t alpha_val = alpha.to<opmath_t>();
+            opmath_t beta_val = beta.to<opmath_t>();
+            const scalar_t* mat1_ptr = args.mata->const_data_ptr<scalar_t>();
+            const scalar_t* mat2_ptr = args.matb->const_data_ptr<scalar_t>();
+            scalar_t* result_ptr = args.result->mutable_data_ptr<scalar_t>();
+            at::cuda::blas::gemm<scalar_t>(
+                args.transa,
+                args.transb,
+                args.m,
+                args.n,
+                args.k,
+                alpha_val,
+                mat1_ptr,
+                args.lda,
+                mat2_ptr,
+                args.ldb,
+                beta_val,
+                result_ptr,
+                args.result_ld);
+          });
+      
+      // Apply activation functions as before
+      switch (activation) {
+        case Activation::RELU:
+          at::relu_(const_cast<Tensor&>(*args.result));
+          break;
+        case Activation::GELU:
+          at::gelu_(const_cast<Tensor&>(*args.result), "tanh");
+          break;
+        default: break;
+      }
     }
   }
 
