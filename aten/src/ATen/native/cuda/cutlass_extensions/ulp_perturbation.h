@@ -10,6 +10,7 @@
 #include <cuda_bf16.h>
 #include <cutlass/cutlass.h>
 #include <cutlass/numeric_types.h>
+#include <cmath>  // for isnan, isinf
 
 namespace cutlass {
 namespace epilogue {

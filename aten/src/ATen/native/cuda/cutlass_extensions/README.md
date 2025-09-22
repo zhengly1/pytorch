@@ -115,3 +115,23 @@ and [here](https://github.com/NVIDIA/cutlass/issues/1060), *CUTLASS*
 itself is expected to include the functionality provided by these
 extensions, so hopefully this whole directory will be removed from
 *PyTorch* source tree at some later time.
+
+## CUTLASS GEMM with ULP Perturbation Extension
+
+Additionally, this directory now contains a custom CUTLASS GEMM implementation
+with ULP (Unit in the Last Place) perturbation functionality:
+
+### New Files:
+- `ulp_perturbation.h` - ULP perturbation utilities for float32, half, bfloat16
+- `epilogue/thread/linear_combination_ulp_perturbation.h` - Custom CUTLASS epilogue with ULP perturbation
+- `cutlass_gemm_ulp_perturbation.h/.cu` - CUTLASS GEMM wrapper with ULP perturbation
+
+### Purpose:
+This implementation replaces cuBLAS API calls in `addmm_out_cuda_impl` with a
+custom CUTLASS GEMM that applies downward ULP perturbation to the left operand
+(accumulator) before each addition operation in the matrix multiplication.
+
+### Usage:
+Enable by defining `USE_CUTLASS_ULP_PERTURBATION` during compilation.
+When enabled, `torch.addmm` operations will use the ULP-perturbed CUTLASS 
+implementation instead of cuBLAS for supported floating-point types.

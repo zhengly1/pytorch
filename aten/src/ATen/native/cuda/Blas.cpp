@@ -15,7 +15,9 @@
 #include <ATen/native/Resize.h>
 #include <c10/util/MaybeOwned.h>
 #include <ATen/native/cuda/RowwiseScaledMM.h>
+#ifdef USE_CUTLASS_ULP_PERTURBATION
 #include <ATen/native/cuda/cutlass_extensions/cutlass_gemm_ulp_perturbation.h>
+#endif
 
 #ifndef AT_PER_OPERATOR_HEADERS
 #include <ATen/Functions.h>
@@ -455,8 +457,9 @@ Tensor& addmm_out_cuda_impl(Tensor& result, const Tensor& self, const Tensor& ma
 #endif
   } else
   {
-    // Use CUTLASS GEMM with ULP perturbation instead of cuBLAS
+    // Use CUTLASS GEMM with ULP perturbation instead of cuBLAS when available
     // Note: Complex types are not currently supported by our CUTLASS implementation
+#ifdef USE_CUTLASS_ULP_PERTURBATION
     AT_DISPATCH_FLOATING_TYPES_AND2(
         at::ScalarType::Half,
         at::ScalarType::BFloat16,
@@ -490,6 +493,36 @@ Tensor& addmm_out_cuda_impl(Tensor& result, const Tensor& self, const Tensor& ma
               result_ptr,
               args.result_ld);
         });
+#else
+    // Fallback to original cuBLAS implementation if CUTLASS ULP not available
+    AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(
+        at::ScalarType::Half,
+        at::ScalarType::BFloat16,
+        scalar_type,
+        "addmm_cuda",
+        [&] {
+          using opmath_t = at::opmath_type<scalar_t>;
+          opmath_t alpha_val = alpha.to<opmath_t>();
+          opmath_t beta_val = beta.to<opmath_t>();
+          const scalar_t* mat1_ptr = args.mata->const_data_ptr<scalar_t>();
+          const scalar_t* mat2_ptr = args.matb->const_data_ptr<scalar_t>();
+          scalar_t* result_ptr = args.result->mutable_data_ptr<scalar_t>();
+          at::cuda::blas::gemm<scalar_t>(
+              args.transa,
+              args.transb,
+              args.m,
+              args.n,
+              args.k,
+              alpha_val,
+              mat1_ptr,
+              args.lda,
+              mat2_ptr,
+              args.ldb,
+              beta_val,
+              result_ptr,
+              args.result_ld);
+        });
+#endif // USE_CUTLASS_ULP_PERTURBATION
     switch (activation) {
       case Activation::RELU:
         at::relu_(const_cast<Tensor&>(*args.result));
