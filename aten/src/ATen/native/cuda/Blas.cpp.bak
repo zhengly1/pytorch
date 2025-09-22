@@ -15,7 +15,6 @@
 #include <ATen/native/Resize.h>
 #include <c10/util/MaybeOwned.h>
 #include <ATen/native/cuda/RowwiseScaledMM.h>
-#include <ATen/native/cuda/cutlass_extensions/cutlass_gemm_ulp_perturbation.h>
 
 #ifndef AT_PER_OPERATOR_HEADERS
 #include <ATen/Functions.h>
@@ -455,13 +454,11 @@ Tensor& addmm_out_cuda_impl(Tensor& result, const Tensor& self, const Tensor& ma
 #endif
   } else
   {
-    // Use CUTLASS GEMM with ULP perturbation instead of cuBLAS
-    // Note: Complex types are not currently supported by our CUTLASS implementation
-    AT_DISPATCH_FLOATING_TYPES_AND2(
+    AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(
         at::ScalarType::Half,
         at::ScalarType::BFloat16,
         scalar_type,
-        "addmm_cuda_cutlass_ulp",
+        "addmm_cuda",
         [&] {
           using opmath_t = at::opmath_type<scalar_t>;
           opmath_t alpha_val = alpha.to<opmath_t>();
@@ -469,15 +466,9 @@ Tensor& addmm_out_cuda_impl(Tensor& result, const Tensor& self, const Tensor& ma
           const scalar_t* mat1_ptr = args.mata->const_data_ptr<scalar_t>();
           const scalar_t* mat2_ptr = args.matb->const_data_ptr<scalar_t>();
           scalar_t* result_ptr = args.result->mutable_data_ptr<scalar_t>();
-          
-          // Convert transpose characters to boolean
-          bool transpose_a = (args.transa == 't' || args.transa == 'T' || args.transa == 'c' || args.transa == 'C');
-          bool transpose_b = (args.transb == 't' || args.transb == 'T' || args.transb == 'c' || args.transb == 'C');
-          
-          // Launch CUTLASS GEMM with ULP perturbation
-          at::native::cutlass_gemm::launch_cutlass_gemm_ulp_perturbation<scalar_t>(
-              transpose_a,
-              transpose_b,
+          at::cuda::blas::gemm<scalar_t>(
+              args.transa,
+              args.transb,
               args.m,
               args.n,
               args.k,
