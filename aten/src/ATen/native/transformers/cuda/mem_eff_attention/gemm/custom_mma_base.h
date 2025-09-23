@@ -103,7 +103,7 @@ class CustomMmaBase {
   template <typename Element, typename OperandShape, typename OperandLayout>
   struct OperandSharedStorage {
     AlignedBuffer<Element, OperandShape::kCount> buffer;
-    using TensorRef = TensorRef<Element, OperandLayout>;
+    using TensorRef = cutlass::TensorRef<Element, OperandLayout>;
 
     CUTLASS_DEVICE
     static OperandLayout Layout() {

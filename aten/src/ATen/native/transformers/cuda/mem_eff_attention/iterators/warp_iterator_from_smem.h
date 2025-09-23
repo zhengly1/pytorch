@@ -96,7 +96,7 @@ class WarpIteratorFromSmem {
   static int const kThreads = 32;
 
   /// TensorRef type for loading element from a tensor
-  using TensorRef = TensorRef<Element, Layout>;
+  using TensorRef = cutlass::TensorRef<Element, Layout>;
 
   /// Index type
   using Index = typename TensorRef::Index;
