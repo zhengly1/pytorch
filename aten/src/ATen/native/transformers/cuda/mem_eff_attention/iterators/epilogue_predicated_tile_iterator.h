@@ -80,7 +80,7 @@ class PredicatedTileIteratorPrefetch {
   using Element = Element_;
 
   using Layout = layout::RowMajor;
-  using TensorRef = TensorRef<Element, Layout>;
+  using TensorRef = cutlass::TensorRef<Element, Layout>;
   using ConstTensorRef = typename TensorRef::ConstTensorRef;
 
   using Index = typename Layout::Index;

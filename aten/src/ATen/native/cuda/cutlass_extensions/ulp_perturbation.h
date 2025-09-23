@@ -10,6 +10,7 @@
 #include <cuda_bf16.h>
 #include <cutlass/cutlass.h>
 #include <cutlass/numeric_types.h>
+#include <c10/util/floating_point_utils.h>
 #include <cmath>  // for isnan, isinf
 
 namespace cutlass {
@@ -33,8 +34,8 @@ float ulp_perturb_down<float>(float value) {
         return value;
     }
     
-    // Reinterpret as integer for bit manipulation
-    uint32_t bits = __float_as_uint(value);
+    // Reinterpret as integer for bit manipulation using portable c10 functions
+    uint32_t bits = c10::detail::fp32_to_bits(value);
     
     // For positive numbers, decrement the mantissa
     // For negative numbers, increment the mantissa (to move towards zero)
@@ -44,7 +45,7 @@ float ulp_perturb_down<float>(float value) {
         bits++;
     }
     
-    return __uint_as_float(bits);
+    return c10::detail::fp32_from_bits(bits);
 }
 
 /// Specialization for half (16-bit)

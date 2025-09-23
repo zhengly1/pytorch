@@ -114,8 +114,8 @@ class PredicatedTileAccessIteratorResidualLast<
   using Index = typename Layout::Index;
   using LongIndex = typename Layout::LongIndex;
 
-  using TensorRef = TensorRef<Element, Layout>;
-  using TensorView = TensorView<Element, Layout>;
+  using TensorRef = cutlass::TensorRef<Element, Layout>;
+  using TensorView = cutlass::TensorView<Element, Layout>;
   using TensorCoord = typename Layout::TensorCoord;
 
   using Pointer = Element*;
@@ -473,8 +473,8 @@ class PredicatedTileAccessIteratorResidualLast<
   using Index = typename Layout::Index;
   using LongIndex = typename Layout::LongIndex;
 
-  using TensorRef = TensorRef<Element, Layout>;
-  using TensorView = TensorView<Element, Layout>;
+  using TensorRef = cutlass::TensorRef<Element, Layout>;
+  using TensorView = cutlass::TensorView<Element, Layout>;
   using TensorCoord = typename Layout::TensorCoord;
 
   using Pointer = Element*;
@@ -698,8 +698,8 @@ class PredicatedTileAccessIteratorResidualLast<
   using Index = typename Layout::Index;
   using LongIndex = typename Layout::LongIndex;
 
-  using TensorRef = TensorRef<Element, Layout>;
-  using TensorView = TensorView<Element, Layout>;
+  using TensorRef = cutlass::TensorRef<Element, Layout>;
+  using TensorView = cutlass::TensorView<Element, Layout>;
   using TensorCoord = typename Layout::TensorCoord;
 
   using Pointer = Element*;
@@ -920,8 +920,8 @@ class PredicatedTileAccessIteratorResidualLast<
   using Index = typename Layout::Index;
   using LongIndex = typename Layout::LongIndex;
 
-  using TensorRef = TensorRef<Element, Layout>;
-  using TensorView = TensorView<Element, Layout>;
+  using TensorRef = cutlass::TensorRef<Element, Layout>;
+  using TensorView = cutlass::TensorView<Element, Layout>;
   using TensorCoord = typename Layout::TensorCoord;
 
   using Pointer = Element*;
@@ -1254,8 +1254,8 @@ class PredicatedTileAccessIteratorResidualLast<
   using Index = typename Layout::Index;
   using LongIndex = typename Layout::LongIndex;
 
-  using TensorRef = TensorRef<Element, Layout>;
-  using TensorView = TensorView<Element, Layout>;
+  using TensorRef = cutlass::TensorRef<Element, Layout>;
+  using TensorView = cutlass::TensorView<Element, Layout>;
   using TensorCoord = typename Layout::TensorCoord;
 
   using Pointer = Element*;
@@ -1473,8 +1473,8 @@ class PredicatedTileAccessIteratorResidualLast<
   using Index = typename Layout::Index;
   using LongIndex = typename Layout::LongIndex;
 
-  using TensorRef = TensorRef<Element, Layout>;
-  using TensorView = TensorView<Element, Layout>;
+  using TensorRef = cutlass::TensorRef<Element, Layout>;
+  using TensorView = cutlass::TensorView<Element, Layout>;
   using TensorCoord = typename Layout::TensorCoord;
 
   using Pointer = Element*;
@@ -1695,8 +1695,8 @@ class PredicatedTileAccessIteratorResidualLast<
   using Index = typename Layout::Index;
   using LongIndex = typename Layout::LongIndex;
 
-  using TensorRef = TensorRef<Element, Layout>;
-  using TensorView = TensorView<Element, Layout>;
+  using TensorRef = cutlass::TensorRef<Element, Layout>;
+  using TensorView = cutlass::TensorView<Element, Layout>;
   using TensorCoord = typename Layout::TensorCoord;
 
   using Pointer = Element*;
@@ -1922,8 +1922,8 @@ class PredicatedTileAccessIteratorResidualLast<
   using Index = typename Layout::Index;
   using LongIndex = typename Layout::LongIndex;
 
-  using TensorRef = TensorRef<Element, Layout>;
-  using TensorView = TensorView<Element, Layout>;
+  using TensorRef = cutlass::TensorRef<Element, Layout>;
+  using TensorView = cutlass::TensorView<Element, Layout>;
   using TensorCoord = typename Layout::TensorCoord;
 
   using Pointer = Element*;

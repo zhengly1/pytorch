@@ -131,7 +131,7 @@ public:
     using Layout = layout::RowMajor;
 
     /// TensorRef type for loading element from a tensor
-    using TensorRef = TensorRef<ElementScale, Layout>;
+    using TensorRef = cutlass::TensorRef<ElementScale, Layout>;
 
     CUTLASS_DEVICE
     MmaTensorOpDequantizer(TensorRef smem_scales, const int warp_idx_n, const int lane_idx)
@@ -239,7 +239,7 @@ public:
     using Layout = layout::RowMajor;
 
     /// TensorRef type for loading element from a tensor
-    using TensorRef = TensorRef<ElementScale, Layout>;
+    using TensorRef = cutlass::TensorRef<ElementScale, Layout>;
 
     CUTLASS_DEVICE
     MmaTensorOpDequantizer(TensorRef smem_scales, const int warp_idx_n, const int lane_idx)
@@ -333,7 +333,7 @@ public:
     using Layout = layout::RowMajor;
 
     /// TensorRef type for loading element from a tensor
-    using TensorRef = TensorRef<ElementScale, Layout>;
+    using TensorRef = cutlass::TensorRef<ElementScale, Layout>;
 
     CUTLASS_DEVICE
     MmaTensorOpDequantizer(TensorRef smem_scales, const int warp_idx_n, const int lane_idx)
@@ -419,7 +419,7 @@ public:
     using Layout = layout::RowMajor;
 
     /// TensorRef type for loading element from a tensor
-    using TensorRef = TensorRef<ElementScale, Layout>;
+    using TensorRef = cutlass::TensorRef<ElementScale, Layout>;
 
     CUTLASS_DEVICE
     MmaTensorOpDequantizer(TensorRef smem_scales, const int warp_idx_n, const int lane_idx)
